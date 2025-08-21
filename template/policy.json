@@ -1,0 +1,120 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "policyName": {
+      "type": "string",
+      "defaultValue": "RestrictToStorageAndSearch",
+      "metadata": {
+        "description": "Name of the policy definition"
+      }
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "type": "Microsoft.Authorization/policyDefinitions",
+      "apiVersion": "2021-06-01",
+      "name": "[parameters('policyName')]",
+      "properties": {
+        "displayName": "Allow only Storage Accounts and AI Search with Specific Configurations",
+        "description": "This policy allows only Azure Storage Accounts (BlobStorage or StorageV2 type with Standard_LRS redundancy in East US) and AI Search services (standard tier in East US) to be created. All other resources are denied.",
+        "mode": "All",
+        "metadata": {
+          "category": "Resource Governance",
+          "version": "1.0.0"
+        },
+        "parameters": {},
+        "policyRule": {
+          "if": {
+            "anyOf": [
+              {
+                "allOf": [
+                  {
+                    "field": "type",
+                    "equals": "Microsoft.Storage/storageAccounts"
+                  },
+                  {
+                    "anyOf": [
+                      {
+                        "field": "location",
+                        "notEquals": "eastus"
+                      },
+                      {
+                        "field": "Microsoft.Storage/storageAccounts/sku.name",
+                        "notEquals": "Standard_LRS"
+                      },
+                      {
+                        "field": "kind",
+                        "notIn": [
+                          "BlobStorage",
+                          "StorageV2"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "allOf": [
+                  {
+                    "field": "type",
+                    "equals": "Microsoft.Search/searchServices"
+                  },
+                  {
+                    "anyOf": [
+                      {
+                        "field": "location",
+                        "notEquals": "eastus"
+                      },
+                      {
+                        "field": "Microsoft.Search/searchServices/sku.name",
+                        "notEquals": "standard"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "field": "type",
+                "notIn": [
+                  "Microsoft.Storage/storageAccounts",
+                  "Microsoft.Storage/storageAccounts/blobServices",
+                  "Microsoft.Storage/storageAccounts/blobServices/containers",
+                  "Microsoft.Storage/storageAccounts/encryptionScopes",
+                  "Microsoft.Storage/storageAccounts/managementPolicies",
+                  "Microsoft.Search/searchServices",
+                  "Microsoft.Authorization/roleAssignments",
+                  "Microsoft.Authorization/policyAssignments",
+                  "Microsoft.Authorization/locks",
+                  "Microsoft.Resources/deployments",
+                  "Microsoft.Resources/deploymentScripts",
+                  "Microsoft.Resources/tags",
+                  "Microsoft.Insights/diagnosticSettings",
+                  "Microsoft.Insights/metrics",
+                  "Microsoft.Insights/logs",
+                  "Microsoft.Network/privateEndpoints",
+                  "Microsoft.Network/privateLinkServices",
+                  "Microsoft.Network/privateEndpoints/privateDnsZoneGroups"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "effect": "deny"
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "policyDefinitionId": {
+      "type": "string",
+      "value": "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', parameters('policyName'))]"
+    },
+    "policyDefinitionName": {
+      "type": "string",
+      "value": "[parameters('policyName')]"
+    }
+  }
+}
